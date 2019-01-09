@@ -40,7 +40,7 @@ client.on('connect', function(connection) {
           
           nodes.forEach(node => {
             if (data.data.id === node.trim()) {
-              if (latestBlockNumber - blockNumber >= process.env.DIFF_COUNT) {
+              if (latestBlockNumber - blockNumber >= parseInt(process.env.DIFF_COUNT)) {
                 console.log('Restarting node!!!');
                 const restartSh = spawn('sh', [ process.env.SCRIPT_FILE ], {
                   cwd: process.env.SCRIPT_PATH,
