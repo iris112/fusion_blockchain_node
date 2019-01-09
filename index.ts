@@ -13,6 +13,15 @@ var web3 = web3FusionExtend.extend(wb);
 var client = new WebSocket.client();
 var latestBlockNumber = 0;
 var nodes = process.env.NODE_ID.split(',');
+var nodeInfo = {};
+
+nodes.forEach(node => {
+  nodeInfo[node] = 0;
+});
+
+function resetNodeInfo(node) {
+  nodeInfo[node] = 0;
+}
 
 client.on('connectFailed', function(error) {
     console.log('Connect Error: ' + error.toString());
@@ -40,24 +49,21 @@ client.on('connect', function(connection) {
             latestBlockNumber = blockNumber;
           
           nodes.forEach(node => {
-            if (data.data.id === node.trim()) {
+            if (data.data.id === node.trim() && nodeInfo[node] == 0) {
               if (latestBlockNumber - blockNumber >= parseInt(process.env.DIFF_COUNT)) {
                 console.log('Restarting node <' + data.data.id + '>, because <node block = ' + blockNumber + '> is less than <current block = ' + latestBlockNumber + '>');
-                const restartSh = spawnSync('sh', [ process.env.SCRIPT_FILE ], {
+                const restartSh = spawn('sh', [ process.env.SCRIPT_FILE ], {
                   cwd: process.env.SCRIPT_PATH,
-                  env: Object.assign({}, process.env, { PATH: process.env.PATH + ':/usr/local/bin' }),
-                  shell: true
+                  env: Object.assign({}, process.env, { PATH: process.env.PATH + ':/usr/local/bin' })
                 });
-                // restartSh.stdout.on('data', (data) => {
-                //   console.log(data.toString());
-                // });
-                console.log(restartSh.stdout.toString());
-                sleep.sleep(parseInt(process.env.WAITING_TIME_SECOND));
-                console.log('continue watching...');
+                restartSh.stdout.on('data', (data) => {
+                  console.log(data.toString());
+                });
+                nodeInfo[node] = 1;
+                setTimeout(() => resetNodeInfo(node), parseInt(process.env.WAITING_TIME_SECOND) * 1000);
               }
             }
           })
-
         } catch (e) {
           console.log(e);
           return;
