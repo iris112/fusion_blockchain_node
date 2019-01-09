@@ -3,6 +3,7 @@ import * as web3FusionExtend from "web3-fusion-extend";
 import * as WebSocket from 'websocket';
 import * as dotenv from 'dotenv';
 import { spawn } from 'child_process';
+import * as sleep from 'sleep';
 
 dotenv.config();
 const ws_server = 'ws://node.fusionnetwork.io/primus/?_primuscb=1546917854134-0';
@@ -41,17 +42,22 @@ client.on('connect', function(connection) {
           nodes.forEach(node => {
             if (data.data.id === node.trim()) {
               if (latestBlockNumber - blockNumber >= parseInt(process.env.DIFF_COUNT)) {
-                console.log('Restarting node!!!');
-                const restartSh = spawn('sh', [ process.env.SCRIPT_FILE ], {
+                console.log('Restarting node <' + data.data.id + '>, because <node block = ' + blockNumber + '> is less than <current block = ' + latestBlockNumber + '>');
+                const restartSh = spawnSync('sh', [ process.env.SCRIPT_FILE ], {
                   cwd: process.env.SCRIPT_PATH,
-                  env: Object.assign({}, process.env, { PATH: process.env.PATH + ':/usr/local/bin' })
+                  env: Object.assign({}, process.env, { PATH: process.env.PATH + ':/usr/local/bin' }),
+                  shell: true
                 });
-                restartSh.stdout.on('data', (data) => {
-                  console.log(data.toString());
-                });
+                // restartSh.stdout.on('data', (data) => {
+                //   console.log(data.toString());
+                // });
+                console.log(restartSh.stdout.toString());
+                sleep.sleep(parseInt(process.env.WAITING_TIME_SECOND));
+                console.log('continue watching...');
               }
             }
           })
+
         } catch (e) {
           console.log('This doesn\'t look like a valid JSON: ',
               message.data);

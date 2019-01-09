@@ -13,6 +13,7 @@ const web3FusionExtend = require("web3-fusion-extend");
 const WebSocket = require("websocket");
 const dotenv = require("dotenv");
 const child_process_1 = require("child_process");
+const sleep = require("sleep");
 dotenv.config();
 const ws_server = 'ws://node.fusionnetwork.io/primus/?_primuscb=1546917854134-0';
 var wb = new Web3();
@@ -44,15 +45,19 @@ client.on('connect', function (connection) {
                 latestBlockNumber = blockNumber;
             nodes.forEach(node => {
                 if (data.data.id === node.trim()) {
-                    if (latestBlockNumber - blockNumber >= 10) {
-                        console.log('Restarting node!!!');
-                        const restartSh = child_process_1.spawn('sh', [process.env.SCRIPT_FILE], {
+                    if (latestBlockNumber - blockNumber >= parseInt(process.env.DIFF_COUNT)) {
+                        console.log('Restarting node <' + data.data.id + '>, because <node block = ' + blockNumber + '> is less than <current block = ' + latestBlockNumber + '>');
+                        const restartSh = child_process_1.spawnSync('sh', [process.env.SCRIPT_FILE], {
                             cwd: process.env.SCRIPT_PATH,
-                            env: Object.assign({}, process.env, { PATH: process.env.PATH + ':/usr/local/bin' })
+                            env: Object.assign({}, process.env, { PATH: process.env.PATH + ':/usr/local/bin' }),
+                            shell: true
                         });
-                        restartSh.stdout.on('data', (data) => {
-                            console.log(data.toString());
-                        });
+                        // restartSh.stdout.on('data', (data) => {
+                        //   console.log(data.toString());
+                        // });
+                        console.log(restartSh.stdout.toString());
+                        sleep.sleep(parseInt(process.env.WAITING_TIME_SECOND));
+                        console.log('continue watching...');
                     }
                 }
             });
@@ -82,3 +87,4 @@ function connectService() {
     });
 }
 ;
+
