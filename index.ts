@@ -60,7 +60,7 @@ client.on('connect', function(connection) {
 
         } catch (e) {
           console.log('This doesn\'t look like a valid JSON: ',
-              message.data);
+              message);
           return;
         }
     });
